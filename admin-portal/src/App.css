@@ -1,0 +1,521 @@
+:root {
+  --gold: #f2a900;
+  --gold-dark: #c98600;
+  --ink-1: #2d2416;
+  --ink-2: #17130c;
+  --border: #e9e2cd;
+  --muted: #8a8172;
+  --text: #1b1a17;
+  --surface: #f6f1e4;
+  --white: #ffffff;
+  --crimson: #9c2b2b;
+  --success: #1f9d5c;
+}
+
+/* =========================================
+   NAV BAR
+========================================= */
+
+.nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+
+  padding: 14px 28px;
+
+  background: linear-gradient(120deg, var(--ink-1) 0%, var(--ink-2) 100%);
+  color: var(--white);
+
+  border-bottom: 1px solid var(--gold);
+}
+
+.nav-bar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.nav-bar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--white);
+}
+
+.nav-bar-links {
+  display: flex;
+  gap: 18px;
+  flex: 1;
+}
+
+.nav-bar-links a {
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-bar-links a.active,
+.nav-bar-links a:hover {
+  color: var(--white);
+  border-bottom-color: var(--gold);
+}
+
+.nav-bar-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.nav-bar-email {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-bar-role {
+  padding: 2px 8px;
+  border: 1px solid rgba(242, 169, 0, 0.4);
+  border-radius: 999px;
+  background: rgba(242, 169, 0, 0.12);
+  color: var(--gold);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.nav-bar-account button {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--white);
+  cursor: pointer;
+}
+
+.nav-bar-account button:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* =========================================
+   PAGE LAYOUT
+========================================= */
+
+.app-content {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.page h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+
+.page-subtitle {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.page-error {
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--crimson);
+  border-radius: 8px;
+  background: rgba(156, 43, 43, 0.06);
+  color: var(--crimson);
+  font-size: 13px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--gold-dark);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* =========================================
+   UPLOAD FORM
+========================================= */
+
+.upload-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+
+  padding: 16px;
+  margin-bottom: 24px;
+
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.upload-form input[type="text"],
+.upload-form input[type="email"],
+.upload-form input[type="password"],
+.upload-form select,
+.data-table select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.upload-form input[type="text"],
+.upload-form input[type="email"],
+.upload-form input[type="password"] {
+  min-width: 200px;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.version-current {
+  color: var(--success);
+  font-size: 11px;
+}
+
+.upload-form button {
+  padding: 8px 16px;
+  border: 1px solid var(--ink-2);
+  border-radius: 8px;
+  background: linear-gradient(120deg, var(--ink-1), var(--ink-2));
+  color: var(--gold);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.upload-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.upload-form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* =========================================
+   DATA TABLE
+========================================= */
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+
+.data-table th {
+  background: var(--surface);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+.data-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.empty-row {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px !important;
+}
+
+.truncate {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.row-actions button,
+.row-actions a {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.row-actions button:hover,
+.row-actions a:hover {
+  border-color: var(--gold);
+}
+
+/* =========================================
+   DOCUMENT CHUNKS
+========================================= */
+
+.chunk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chunk-card {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.chunk-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.chunk-card-index {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.chunk-card-header button {
+  margin-left: auto;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.chunk-card-header button:hover {
+  border-color: var(--gold);
+}
+
+.chunk-card-text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: pre-line;
+  color: var(--text);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-badge--queued {
+  background: rgba(138, 129, 114, 0.15);
+  color: var(--muted);
+}
+
+.status-badge--processing {
+  background: rgba(242, 169, 0, 0.15);
+  color: var(--gold-dark);
+}
+
+.status-badge--indexed {
+  background: rgba(31, 157, 92, 0.12);
+  color: var(--success);
+}
+
+.status-badge--failed {
+  background: rgba(156, 43, 43, 0.1);
+  color: var(--crimson);
+}
+
+.status-badge--confidential {
+  background: rgba(156, 43, 43, 0.1);
+  color: var(--crimson);
+}
+
+.status-error {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--crimson);
+}
+
+/* =========================================
+   CONVERSATION TRANSCRIPT
+========================================= */
+
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transcript-row {
+  display: flex;
+}
+
+.transcript-row--user {
+  justify-content: flex-end;
+}
+
+.transcript-bubble {
+  max-width: 60%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--white);
+}
+
+.transcript-row--user .transcript-bubble {
+  background: linear-gradient(135deg, #ffd166, var(--gold));
+  border-color: var(--gold-dark);
+}
+
+.transcript-bubble p {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  white-space: pre-line;
+}
+
+.transcript-time {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+/* =========================================
+   LOGIN
+========================================= */
+
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  width: 320px;
+  padding: 32px;
+
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: 0 20px 50px rgba(23, 19, 12, 0.1);
+}
+
+.login-logo {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 4px;
+}
+
+.login-card h1 {
+  margin: 0;
+  text-align: center;
+  font-size: 18px;
+}
+
+.login-subtitle {
+  margin: 0 0 8px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.login-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.login-card input {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.login-card input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.login-error {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(156, 43, 43, 0.08);
+  color: var(--crimson);
+  font-size: 12.5px;
+}
+
+.login-card button {
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid var(--ink-2);
+  border-radius: 8px;
+  background: linear-gradient(120deg, var(--ink-1), var(--ink-2));
+  color: var(--gold);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

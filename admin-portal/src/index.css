@@ -8,8 +8,20 @@ html {
 body {
   min-width: 320px;
   min-height: 100vh;
+  margin: 0;
+  background: #f6f1e4;
+  color: #1b1a17;
 }
 
 #root {
   min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  font: inherit;
 }

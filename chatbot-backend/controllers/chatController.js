@@ -1,8 +1,12 @@
-import { generateReply } from '../services/llmService.js'
+import { askRag } from '../services/ragClient.js'
+import { logTurn } from '../services/conversationService.js'
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function chat(request, response) {
   try {
-    const { message, history = [] } = request.body
+    const { message, sessionId } = request.body
 
     if (typeof message !== 'string' || !message.trim()) {
       return response.status(400).json({
@@ -10,12 +14,22 @@ export async function chat(request, response) {
       })
     }
 
-    const reply = await generateReply(
-      message.trim(),
-      Array.isArray(history) ? history : [],
-    )
+    const trimmedMessage = message.trim()
+    const { answer, sources } = await askRag(trimmedMessage)
 
-    return response.json({ reply })
+    if (typeof sessionId === 'string' && UUID_PATTERN.test(sessionId)) {
+      // Logging must never break the citizen-facing reply.
+      logTurn({
+        sessionId,
+        userMessage: trimmedMessage,
+        botReply: answer,
+        sources,
+      }).catch((error) => {
+        console.error('Logging conversation turn failed:', error)
+      })
+    }
+
+    return response.json({ reply: answer, sources })
   } catch (error) {
     console.error('Chat request failed:', error)
 

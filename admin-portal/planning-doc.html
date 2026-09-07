@@ -1,0 +1,801 @@
+<title>Knowledge Base Governance</title>
+<meta name="description" content="Implementation plan for role-based access, department scoping, and document lifecycle (versioning, archiving) in the PSC chatbot admin portal.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --ink-950: #14100a;
+    --ink-800: #2d2416;
+    --gold: #f2a900;
+    --gold-dim: #b8862f;
+    --gold-soft: #f6c977;
+    --paper: #faf7f0;
+    --surface: #f2ede0;
+    --ink-text: #211c14;
+    --muted: #8b8171;
+    --line: #e4dcc8;
+    --success: #1f7a4d;
+    --success-bg: #e4f1e9;
+    --restrict: #9c3b2e;
+    --restrict-bg: #f6e6e2;
+    --shadow: rgba(20, 16, 10, 0.12);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #18130c;
+      --surface: #211a10;
+      --ink-text: #f1e9d8;
+      --muted: #ab9d82;
+      --line: #3c3020;
+      --success: #49c48b;
+      --success-bg: #1c3327;
+      --restrict: #e58474;
+      --restrict-bg: #3a221d;
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #18130c;
+    --surface: #211a10;
+    --ink-text: #f1e9d8;
+    --muted: #ab9d82;
+    --line: #3c3020;
+    --success: #49c48b;
+    --success-bg: #1c3327;
+    --restrict: #e58474;
+    --restrict-bg: #3a221d;
+    --shadow: rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink-text);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    font-size: 15.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+
+  /* ===== Letterhead ===== */
+
+  .letterhead {
+    position: relative;
+    overflow: hidden;
+    padding: 44px 32px 34px;
+    background: linear-gradient(150deg, var(--ink-800) 0%, var(--ink-950) 85%);
+    color: #f4ecd8;
+    border-bottom: 3px solid var(--gold);
+  }
+
+  .letterhead::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -8%;
+    width: 380px;
+    height: 380px;
+    background: repeating-radial-gradient(circle, rgba(242,169,0,0.5) 0 1px, transparent 1px 9px);
+    opacity: 0.14;
+    pointer-events: none;
+  }
+
+  .letterhead-inner {
+    position: relative;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .letterhead-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "IBM Plex Mono";
+    font-size: 11.5px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    margin-bottom: 18px;
+  }
+
+  .letterhead-eyebrow .seal {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 0 3px rgba(242,169,0,0.22);
+    flex-shrink: 0;
+  }
+
+  h1.doc-title {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: clamp(28px, 4.4vw, 42px);
+    line-height: 1.08;
+    letter-spacing: -0.3px;
+    margin: 0 0 14px;
+    text-wrap: balance;
+    max-width: 15ch;
+  }
+
+  .letterhead-dek {
+    font-size: 15px;
+    line-height: 1.6;
+    color: rgba(244,236,216,0.82);
+    max-width: 62ch;
+    margin: 0 0 22px;
+  }
+
+  .letterhead-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(244,236,216,0.16);
+  }
+
+  .letterhead-meta dt {
+    font-family: "IBM Plex Mono";
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(244,236,216,0.5);
+    margin: 0 0 3px;
+  }
+
+  .letterhead-meta dd {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* ===== Page shell ===== */
+
+  .shell {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px 90px;
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 56px;
+  }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .index-rail { display: none; }
+  }
+
+  /* ===== Index rail ===== */
+
+  .index-rail {
+    position: sticky;
+    top: 28px;
+    align-self: start;
+    padding-top: 40px;
+  }
+
+  .index-rail-label {
+    font-family: "IBM Plex Mono";
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+
+  .index-rail ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 1px solid var(--line);
+  }
+
+  .index-rail li { margin: 0; }
+
+  .index-rail a {
+    display: block;
+    padding: 7px 0 7px 16px;
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+    font-size: 12.5px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 140ms ease, border-color 140ms ease;
+  }
+
+  .index-rail a:hover,
+  .index-rail a:focus-visible {
+    color: var(--ink-text);
+    border-left-color: var(--gold-dim);
+  }
+
+  /* ===== Content ===== */
+
+  main { padding-top: 40px; min-width: 0; }
+
+  section { margin-bottom: 56px; scroll-margin-top: 24px; }
+
+  .section-kicker {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .section-num {
+    font-family: "IBM Plex Mono";
+    font-size: 12.5px;
+    color: var(--gold-dim);
+  }
+
+  h2 {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 23px;
+    letter-spacing: -0.2px;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: "IBM Plex Sans";
+    font-weight: 700;
+    font-size: 14px;
+    margin: 26px 0 10px;
+  }
+
+  p { margin: 0 0 14px; max-width: 72ch; }
+  p:last-child { margin-bottom: 0; }
+
+  a { color: var(--gold-dim); }
+
+  .lede {
+    font-size: 16.5px;
+    color: var(--ink-text);
+  }
+
+  code {
+    font-size: 0.88em;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.1em 0.4em;
+  }
+
+  /* ===== Callouts ===== */
+
+  .callout {
+    padding: 16px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    margin: 18px 0;
+  }
+
+  .callout-title {
+    font-weight: 700;
+    font-size: 13px;
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .callout-title .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+
+  .callout p { margin-bottom: 8px; font-size: 14px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout--warn {
+    border-color: color-mix(in srgb, var(--restrict) 35%, var(--line));
+    background: var(--restrict-bg);
+  }
+  .callout--warn .dot { background: var(--restrict); }
+
+  .callout--good {
+    border-color: color-mix(in srgb, var(--success) 35%, var(--line));
+    background: var(--success-bg);
+  }
+  .callout--good .dot { background: var(--success); }
+
+  ul.confirm-list {
+    list-style: none;
+    margin: 14px 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  ul.confirm-list li {
+    position: relative;
+    padding-left: 22px;
+    font-size: 14.5px;
+  }
+
+  ul.confirm-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    top: 0.05em;
+    color: var(--success);
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  /* ===== Matrix table ===== */
+
+  .table-scroll { overflow-x: auto; margin: 18px 0; }
+
+  table.matrix {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  table.matrix th, table.matrix td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+
+  table.matrix thead th {
+    font-family: "IBM Plex Mono";
+    font-size: 10.5px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--ink-text);
+  }
+
+  table.matrix tbody th {
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  table.matrix td:not(:first-child) { text-align: center; }
+
+  .perm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .perm--yes { background: var(--success-bg); color: var(--success); }
+  .perm--no { background: var(--restrict-bg); color: var(--restrict); opacity: 0.7; }
+  .perm-note { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  /* ===== Code panel ===== */
+
+  .code-panel {
+    margin: 16px 0;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--ink-950);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    overflow: hidden;
+  }
+
+  .code-panel-label {
+    padding: 9px 16px;
+    font-family: "IBM Plex Mono";
+    font-size: 10.5px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: rgba(244,236,216,0.55);
+    border-bottom: 1px solid rgba(244,236,216,0.1);
+  }
+
+  .code-panel pre {
+    margin: 0;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono";
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: #f4ecd8;
+  }
+
+  .code-panel .kw { color: var(--gold-soft); }
+  .code-panel .cm { color: rgba(244,236,216,0.42); font-style: italic; }
+  .code-panel .ty { color: #b9d9c4; }
+
+  /* ===== File change lists ===== */
+
+  .file-group { margin: 16px 0 24px; }
+
+  .file-group-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    padding: 3px 10px 3px 8px;
+    border-radius: 5px;
+    margin-bottom: 12px;
+  }
+
+  .file-group-title.is-new { background: var(--success-bg); color: var(--success); }
+  .file-group-title.is-mod { background: var(--surface); color: var(--gold-dim); border: 1px solid var(--line); }
+
+  dl.file-list {
+    margin: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  dl.file-list > div {
+    display: grid;
+    grid-template-columns: minmax(160px, 260px) 1fr;
+    gap: 18px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  @media (max-width: 640px) {
+    dl.file-list > div { grid-template-columns: 1fr; gap: 4px; }
+  }
+
+  dl.file-list dt {
+    font-family: "IBM Plex Mono";
+    font-size: 12px;
+    color: var(--ink-text);
+    padding-top: 1px;
+  }
+
+  dl.file-list dd {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  /* ===== Verification checklist ===== */
+
+  ol.verify {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    counter-reset: verify;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  ol.verify li {
+    counter-increment: verify;
+    display: flex;
+    gap: 14px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+
+  ol.verify li::before {
+    content: counter(verify, decimal-leading-zero);
+    font-family: "IBM Plex Mono";
+    font-size: 11.5px;
+    color: var(--gold-dim);
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  /* ===== Footer ===== */
+
+  .doc-footer {
+    margin-top: 70px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-family: "IBM Plex Mono";
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    section { animation: rise 480ms ease both; }
+    section:nth-of-type(1) { animation-delay: 0ms; }
+    section:nth-of-type(2) { animation-delay: 40ms; }
+    section:nth-of-type(3) { animation-delay: 80ms; }
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<header class="letterhead">
+  <div class="letterhead-inner">
+    <p class="letterhead-eyebrow"><span class="seal"></span> PSC Chatbot Admin Portal · Planning Document</p>
+    <h1 class="doc-title">Knowledge Base Governance</h1>
+    <p class="letterhead-dek">Role-based access, department scoping, and a fuller document lifecycle — versioning and archiving — for the documents that feed the chatbot's answers.</p>
+    <dl class="letterhead-meta">
+      <div><dt>Status</dt><dd>Approved for build</dd></div>
+      <div><dt>Touches</dt><dd>chatbot-backend · rag-service · admin-portal · Postgres</dd></div>
+      <div><dt>Scope</dt><dd>Roles, departments, review gate, versioning, archive</dd></div>
+    </dl>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="index-rail" aria-label="Section index">
+    <p class="index-rail-label">Contents</p>
+    <ol>
+      <li><a href="#context">Context</a></li>
+      <li><a href="#model">Role &amp; department model</a></li>
+      <li><a href="#schema">Database</a></li>
+      <li><a href="#lifecycle">Archive &amp; restore</a></li>
+      <li><a href="#retrieval">Retrieval enforcement</a></li>
+      <li><a href="#backend">chatbot-backend</a></li>
+      <li><a href="#frontend">admin-portal</a></li>
+      <li><a href="#verify">Verification</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <section id="context">
+      <div class="section-kicker"><span class="section-num">01</span><h2>Context</h2></div>
+      <p class="lede">The admin portal currently has one flat tier: any logged-in admin can do everything, and every document is visible to everyone with no ownership or department attached to it.</p>
+      <p>This plan adds three role tiers — <strong>Super Admin</strong> grants access and oversees everything; <strong>Reviewer</strong> uploads and approves or manages documents; <strong>Uploader</strong> submits documents only — plus department-scoped visibility, so an admin only sees their own department's documents unless they're a Super Admin, who sees across all departments. It also extends what can be done to a document once it's in: replace it with full version history, or archive it as a recoverable soft-removal distinct from permanent delete.</p>
+      <p>Exploration of the existing code found: <code>admin_users</code> has no <code>role</code> column, <code>documents</code> has no <code>uploaded_by</code>, <code>createAdmin</code> is reachable by any admin today, and the existing <code>approved</code> column — added earlier, never enforced — is the natural fit for a real review gate.</p>
+
+      <h3>Confirmed with the user</h3>
+      <ul class="confirm-list">
+        <li>One department per admin, assigned by the Super Admin — not a login-time picker. Login stays plain email and password; the account's fixed department drives visibility automatically.</li>
+        <li>Super Admin sees documents across <strong>all</strong> departments.</li>
+        <li>Replacing a document keeps <strong>full version history</strong> — old files stay retained and downloadable.</li>
+        <li>Archiving removes a document from chatbot answers and the main list, but keeps it recoverable in a separate Archived view.</li>
+        <li>Uploader-submitted documents require Reviewer or Super Admin approval before the chatbot can use them.</li>
+        <li>The Conversations page (chat transcripts) is Reviewer and Super Admin only.</li>
+      </ul>
+    </section>
+
+    <section id="model">
+      <div class="section-kicker"><span class="section-num">02</span><h2>Role &amp; department model</h2></div>
+      <p>Three fixed roles, stored on <code>admin_users.role</code>. Visibility and write access both key off role; document visibility additionally keys off department.</p>
+
+      <div class="table-scroll">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th scope="col">Action</th>
+              <th scope="col">Uploader</th>
+              <th scope="col">Reviewer</th>
+              <th scope="col">Super Admin</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Upload a document</th>
+              <td><span class="perm perm--yes">✓</span><span class="perm-note">own dept</span></td>
+              <td><span class="perm perm--yes">✓</span><span class="perm-note">own dept</span></td>
+              <td><span class="perm perm--yes">✓</span><span class="perm-note">any dept</span></td>
+            </tr>
+            <tr>
+              <th scope="row">View documents</th>
+              <td><span class="perm-note" style="margin-top:0">own uploads only</span></td>
+              <td><span class="perm-note" style="margin-top:0">own department, all uploaders</span></td>
+              <td><span class="perm-note" style="margin-top:0">all departments</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Approve / revoke approval</th>
+              <td><span class="perm perm--no">✕</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Replace (new version)</th>
+              <td><span class="perm perm--no">✕</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Archive / restore</th>
+              <td><span class="perm perm--no">✕</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Permanently delete</th>
+              <td><span class="perm perm--no">✕</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Confidential toggle (doc / section)</th>
+              <td><span class="perm perm--no">✕</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">View conversations</th>
+              <td><span class="perm perm--no">✕</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Create admins / roles / departments</th>
+              <td><span class="perm perm--no">✕</span></td>
+              <td><span class="perm perm--no">✕</span></td>
+              <td><span class="perm perm--yes">✓</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><code>documents.approved</code> now defaults from the uploader's role at upload or replace time — computed server-side from the verified session token, never from client input: <code>false</code> (pending) for an Uploader, <code>true</code> (auto-cleared) for a Reviewer or Super Admin. This also closes a latent gap: <code>approved</code> is technically client-suppliable in the request body today, even though the current upload form never sends it.</p>
+    </section>
+
+    <section id="schema">
+      <div class="section-kicker"><span class="section-num">03</span><h2>Database</h2></div>
+      <p><code>db/init/003_add_roles_departments_versions.sql</code> — applied to a fresh install automatically, and run directly against the live database too, since init scripts only execute once, on an empty volume.</p>
+
+      <div class="code-panel">
+        <div class="code-panel-label">003_add_roles_departments_versions.sql</div>
+        <pre><span class="kw">CREATE TABLE</span> departments (
+  id         <span class="ty">UUID</span> <span class="kw">PRIMARY KEY</span>,
+  name       <span class="ty">TEXT</span> <span class="kw">NOT NULL UNIQUE</span>,
+  created_at <span class="ty">TIMESTAMPTZ</span> <span class="kw">NOT NULL DEFAULT</span> now()
+);
+
+<span class="kw">ALTER TABLE</span> admin_users <span class="kw">ADD COLUMN</span> role <span class="ty">TEXT</span> <span class="kw">NOT NULL DEFAULT</span> <span class="ty">'reviewer'</span>
+  <span class="kw">CHECK</span> (role <span class="kw">IN</span> (<span class="ty">'super_admin'</span>, <span class="ty">'reviewer'</span>, <span class="ty">'uploader'</span>));
+<span class="kw">ALTER TABLE</span> admin_users <span class="kw">ADD COLUMN</span> department_id <span class="ty">UUID</span> <span class="kw">REFERENCES</span> departments(id);
+
+<span class="kw">ALTER TABLE</span> documents <span class="kw">ADD COLUMN</span> uploaded_by <span class="ty">UUID</span> <span class="kw">REFERENCES</span> admin_users(id);
+<span class="kw">ALTER TABLE</span> documents <span class="kw">ADD COLUMN</span> department_id <span class="ty">UUID</span> <span class="kw">REFERENCES</span> departments(id);
+<span class="kw">ALTER TABLE</span> documents <span class="kw">ADD COLUMN</span> archived <span class="ty">BOOLEAN</span> <span class="kw">NOT NULL DEFAULT</span> <span class="ty">FALSE</span>;
+<span class="kw">ALTER TABLE</span> documents <span class="kw">ADD COLUMN</span> archived_at <span class="ty">TIMESTAMPTZ</span>;
+<span class="kw">ALTER TABLE</span> documents <span class="kw">ADD COLUMN</span> current_version <span class="ty">INTEGER</span> <span class="kw">NOT NULL DEFAULT</span> 1;
+
+<span class="kw">CREATE TABLE</span> document_versions (
+  id              <span class="ty">UUID</span> <span class="kw">PRIMARY KEY</span>,
+  document_id     <span class="ty">UUID</span> <span class="kw">NOT NULL REFERENCES</span> documents(id) <span class="kw">ON DELETE CASCADE</span>,
+  version_number  <span class="ty">INTEGER</span> <span class="kw">NOT NULL</span>,
+  filename        <span class="ty">TEXT</span> <span class="kw">NOT NULL</span>, <span class="cm">-- original filename, for display / download</span>
+  stored_filename <span class="ty">TEXT</span> <span class="kw">NOT NULL</span>, <span class="cm">-- multer-generated name; each container</span>
+                                <span class="cm">-- builds its own path from its own uploads dir</span>
+  source          <span class="ty">TEXT</span> <span class="kw">NOT NULL</span>,
+  chunks_indexed  <span class="ty">INTEGER</span>,
+  uploaded_by     <span class="ty">UUID</span> <span class="kw">REFERENCES</span> admin_users(id),
+  uploaded_at     <span class="ty">TIMESTAMPTZ</span> <span class="kw">NOT NULL DEFAULT</span> now(),
+  <span class="kw">UNIQUE</span> (document_id, version_number)
+);
+
+<span class="cm">-- The already-seeded admin becomes the first super admin</span>
+<span class="cm">-- (no-op on a fresh install, where admin_users is still empty here).</span>
+<span class="kw">UPDATE</span> admin_users <span class="kw">SET</span> role = <span class="ty">'super_admin'</span> <span class="kw">WHERE</span> email = <span class="ty">'admin@psc.go.ke'</span>;</pre>
+      </div>
+
+      <p><code>documents</code> keeps mirroring the <em>current</em> version's <code>filename</code>, <code>file_path</code>, <code>source</code>, and <code>chunks_indexed</code> — as it already does — so every existing query that reads from <code>documents</code> keeps working unchanged. <code>document_versions</code> is the append-only history sitting alongside it. <code>department_id</code> stays nullable on <code>admin_users</code>: required in the application layer for Reviewer and Uploader accounts, not required for Super Admin, whose access isn't department-scoped.</p>
+
+      <div class="callout callout--warn">
+        <p class="callout-title"><span class="dot"></span>Migration consequence</p>
+        <p>The two documents already in the live database — uploaded before this feature existed — will have <code>uploaded_by = NULL</code> and <code>department_id = NULL</code> after migration. Since Reviewer visibility filters by department, they'll become invisible to every Reviewer (only Super Admin, who sees everything, still will) until a Super Admin manually assigns them to a department. Worth doing right after migrating.</p>
+      </div>
+    </section>
+
+    <section id="lifecycle">
+      <div class="section-kicker"><span class="section-num">04</span><h2>Archive &amp; restore reuse existing machinery</h2></div>
+      <div class="callout callout--good">
+        <p class="callout-title"><span class="dot"></span>No Python changes needed</p>
+        <p><strong>Archiving</strong> a document deletes its Qdrant vectors — reusing the existing <code>delete_by_document_id</code> / <code>deleteDocumentVectors</code>, unchanged — and sets <code>documents.archived = true</code>. <strong>Restoring</strong> clears the flag and re-enqueues ingestion via the existing <code>enqueueIngestion</code>, rebuilding vectors from the current version's file — the same path Reindex already takes.</p>
+        <p>No new Qdrant payload field or <code>rag-service</code> filter is required for archiving: it's pure Node orchestration of endpoints that already exist. <code>rag-service</code> and <code>ingestion-worker</code> are untouched by this part of the plan.</p>
+      </div>
+    </section>
+
+    <section id="retrieval">
+      <div class="section-kicker"><span class="section-num">05</span><h2>Retrieval enforcement — the one new piece in rag-service</h2></div>
+      <p><code>app/retrieval/search.py</code> gains <code>must: approved == True</code> alongside the existing <code>must_not: confidential == True</code>. Safe as a hard <code>must</code> — unlike confidential — because every point ever written already has <code>approved</code> set, defaulting <code>True</code> historically, so there's no legacy-gap risk of hiding old content by accident.</p>
+      <p>Mirrors the confidential-toggle plumbing already proven in the codebase:</p>
+      <dl class="file-list">
+        <div><dt>app/vector_store/qdrant_client.py</dt><dd>add <code>set_approved(document_id, approved)</code></dd></div>
+        <div><dt>app/api/documents.py</dt><dd>add <code>PATCH /documents/{document_id}/approved</code></dd></div>
+      </dl>
+    </section>
+
+    <section id="backend">
+      <div class="section-kicker"><span class="section-num">06</span><h2>chatbot-backend</h2></div>
+
+      <div class="file-group">
+        <span class="file-group-title is-new">New</span>
+        <dl class="file-list">
+          <div><dt>middleware/authMiddleware.js</dt><dd>add <code>requireRole(...roles)</code> — 403 if the caller's role isn't allowed. Stacks after the existing <code>requireAdmin</code>, which only validates the token.</dd></div>
+          <div><dt>controllers/adminUserController.js</dt><dd><code>list</code> (all admins + role + department), <code>updateRole</code>, <code>updateDepartment</code> — Super Admin only. <code>updateRole</code> rejects a change that would leave zero Super Admin accounts.</dd></div>
+          <div><dt>controllers/adminDepartmentController.js</dt><dd><code>list</code>, <code>create</code> — Super Admin only.</dd></div>
+          <div><dt>routes/adminUserRoutes.js, routes/adminDepartmentRoutes.js</dt><dd>all behind <code>requireRole('super_admin')</code>.</dd></div>
+          <div><dt>services/departmentService.js, services/documentVersionService.js</dt><dd>department CRUD; version-row reads/writes.</dd></div>
+        </dl>
+      </div>
+
+      <div class="file-group">
+        <span class="file-group-title is-mod">Modified</span>
+        <dl class="file-list">
+          <div><dt>services/authService.js</dt><dd><code>signToken</code> embeds <code>role</code> and <code>department_id</code>.</dd></div>
+          <div><dt>controllers/adminAuthController.js</dt><dd><code>login</code> selects and returns role and department; <code>createAdmin</code> accepts <code>role</code> (default <code>uploader</code>) and <code>department_id</code> (required unless Super Admin), validated server-side.</dd></div>
+          <div><dt>routes/adminAuthRoutes.js</dt><dd><code>POST /admins</code> moves from bare <code>requireAdmin</code> to <code>requireRole('super_admin')</code>.</dd></div>
+          <div><dt>routes/adminDocumentRoutes.js</dt><dd>delete, reindex, confidential toggles, and the new approve / replace / archive / restore / download-version routes all gain <code>requireRole('reviewer', 'super_admin')</code>. List, upload, and view-sections stay behind base <code>requireAdmin</code> — visibility scoping happens inside the controller via role and department, not a route block.</dd></div>
+          <div><dt>routes/adminConversationRoutes.js</dt><dd>both routes gain <code>requireRole('reviewer', 'super_admin')</code>.</dd></div>
+          <div><dt>services/documentService.js</dt><dd><code>insertDocument</code> takes <code>uploadedBy</code>, <code>departmentId</code>; <code>listDocuments</code> takes <code>{ uploadedBy?, departmentId?, includeArchived? }</code>; add <code>setApproved</code>, <code>setArchived</code>, <code>replaceCurrentVersion</code>.</dd></div>
+          <div><dt>services/ragClient.js</dt><dd>add <code>updateDocumentApproval</code>, mirroring <code>updateDocumentConfidentiality</code>.</dd></div>
+          <div><dt>controllers/adminDocumentController.js</dt><dd><code>upload</code> computes approval, uploader, and department server-side, and writes the first version row. New: <code>replace</code>, <code>archive</code>, <code>restore</code>, <code>downloadVersion</code>, <code>setApproved</code>, <code>setDepartment</code> (Super Admin only — needed to assign the two pre-migration documents to a department).</dd></div>
+          <div><dt>scripts/seedAdmin.js</dt><dd>inserts with <code>role = 'super_admin'</code> — its whole purpose is bootstrapping the account that grants everyone else's access.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section id="frontend">
+      <div class="section-kicker"><span class="section-num">07</span><h2>admin-portal</h2></div>
+
+      <div class="file-group">
+        <span class="file-group-title is-new">New</span>
+        <dl class="file-list">
+          <div><dt>pages/UsersPage.jsx</dt><dd>Super Admin only. Table of admins with per-row role and department dropdowns, a create-admin form, an inline add-department control, and a one-line legend explaining what each role can do.</dd></div>
+          <div><dt>pages/ArchivedDocumentsPage.jsx</dt><dd>Reviewer / Super Admin. Same table shape as Documents, scoped to archived items, with Restore and Permanently-delete actions.</dd></div>
+          <div><dt>api/users.js, api/departments.js</dt><dd>client calls for the new endpoints above.</dd></div>
+        </dl>
+      </div>
+
+      <div class="file-group">
+        <span class="file-group-title is-mod">Modified</span>
+        <dl class="file-list">
+          <div><dt>components/ProtectedRoute.jsx</dt><dd>accepts an optional <code>roles</code> prop; redirects to Documents if the signed-in role isn't permitted.</dd></div>
+          <div><dt>App.jsx</dt><dd><code>/users</code> and <code>/documents/archived</code> role-gated; <code>/conversations*</code> restricted to Reviewer and Super Admin.</dd></div>
+          <div><dt>components/NavBar.jsx</dt><dd>conditionally renders Conversations, Users, and Archived links from the signed-in admin's role.</dd></div>
+          <div><dt>pages/DocumentsPage.jsx</dt><dd>the user-friendly pass: plain-language status badges (Pending review · Approved · Indexed · Processing · Failed · Confidential · Archived), a one-line explainer under the heading, role-appropriate row actions, a department column for Reviewers and Super Admins, and a version indicator linking to download-able history.</dd></div>
+          <div><dt>pages/DocumentChunksPage.jsx</dt><dd>hides the per-section confidential toggle for Uploaders.</dd></div>
+          <div><dt>api/documents.js</dt><dd>add <code>replaceDocument</code>, <code>archiveDocument</code>, <code>restoreDocument</code>, <code>setDocumentApproved</code>, and a version-list / download link builder.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section id="verify">
+      <div class="section-kicker"><span class="section-num">08</span><h2>Verification</h2></div>
+      <p>End-to-end, run in order against the live stack:</p>
+      <ol class="verify">
+        <li>Apply <code>003_...sql</code> to the live database; confirm <code>admin@psc.go.ke</code> is now <code>role = 'super_admin'</code>.</li>
+        <li>Rebuild and restart <code>rag-service</code> and <code>chatbot-backend</code>; confirm both come up clean.</li>
+        <li>As Super Admin: create a department, a Reviewer and an Uploader in it, then a second department with its own Reviewer, to prove isolation.</li>
+        <li>Log in as the first Uploader, upload a document, confirm it shows Pending review with only Sections visible — and that the second department's Reviewer cannot see it.</li>
+        <li>Query <code>rag-service</code> directly; confirm the bot does not yet use the pending document's content.</li>
+        <li>Log in as the first department's Reviewer — the document is visible, the Uploader isn't — and approve it.</li>
+        <li>Re-query the bot; confirm it now uses the content and cites the document.</li>
+        <li>As that Reviewer, replace the document with a new file. Confirm a new version row exists, the old file is still downloadable from the version list, and the bot's answers reflect the new content.</li>
+        <li>Archive the document; confirm it disappears from the main list and from bot answers, but appears in the Archived view. Restore it; confirm it's searchable again.</li>
+        <li>Confirm the Uploader account is redirected away from Users, Conversations, and Archived Documents.</li>
+        <li>Attempt to demote the only Super Admin; confirm it's rejected with a clear error.</li>
+        <li>Call the new user, department, version, and archive endpoints with an Uploader's token; confirm 403 across the board.</li>
+      </ol>
+    </section>
+
+    <div class="doc-footer">
+      <span>Knowledge Base Governance — implementation plan</span>
+      <span>PSC Chatbot Admin Portal</span>
+    </div>
+  </main>
+</div>
